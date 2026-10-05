@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BepInEx.Configuration;
 using Il2CppInterop.Runtime;
+using Il2CppInterop.Runtime.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -127,6 +128,8 @@ public class TrainerUI : MonoBehaviour
         Plugin.Logger.LogInfo($"Overlay style: font={(font != null ? font.name : "none")} sprite={(panelSprite != null ? panelSprite.name : "none")} color#{Patches.UiColorIndex}");
     }
 
+    // These take C#-only types and are only called from C#, so they aren't exposed to IL2CPP.
+    [HideFromIl2Cpp]
     void StepRow(GameObject parent, string label, ConfigEntry<float> entry, float[] steps, Func<float, string> fmt, Func<string> info)
     {
         var row = Row(parent);
@@ -138,6 +141,7 @@ public class TrainerUI : MonoBehaviour
         refreshers.Add(() => { val.text = fmt(entry.Value); inf.text = info(); });
     }
 
+    [HideFromIl2Cpp]
     void ToggleRow(GameObject parent, string label, ConfigEntry<bool> entry)
     {
         var row = Row(parent);
@@ -218,6 +222,7 @@ public class TrainerUI : MonoBehaviour
         return t;
     }
 
+    [HideFromIl2Cpp]
     GameObject Btn(GameObject parent, string label, Action onClick, float width = 36)
     {
         var go = Child(parent, "Button");
