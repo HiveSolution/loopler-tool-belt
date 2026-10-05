@@ -2,7 +2,9 @@
 
 A trainer overlay for The Loopler (BepInEx 6, IL2CPP). Press **F1** in-game to open it.
 
-![The tool belt overlay open on the run map](docs/screenshots/overlay.png)
+| Run | Car |
+| --- | --- |
+| ![Run tab](docs/screenshots/run.png) | ![Car tab](docs/screenshots/car.png) |
 
 Every tool scales the game's own value, so your parts, charms, gates and garage upgrades still count
 underneath. Each row shows the game's value next to the result ("game 533 > 1066"). The **-** and

@@ -11,7 +11,7 @@ public class Plugin : BasePlugin
 {
     public const string Guid = "renokk.loopler.toolbelt";
     public const string Name = "Loopler Tool Belt";
-    public const string Version = "0.1.0";
+    public const string Version = "1.0.0";
 
     internal static ManualLogSource Logger;
     internal static ConfigEntry<float> ScoreMult, LuckBonus, DriftFill, GoldMult;
