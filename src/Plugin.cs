@@ -25,6 +25,7 @@ public class Plugin : BasePlugin
         DriftFill = Config.Bind("Trainer", "DriftFill", 1f, "Multiplies drift meter fill per tick");
         ForceDriftMeter = Config.Bind("Trainer", "ForceDriftMeter", false, "Drift meter active without the charm");
         GoldMult = Config.Bind("Trainer", "GoldMult", 1f, "Multiplies every gold gain");
+        Stats.Bind(Config);
 
         var harmony = new Harmony(Guid);
         harmony.PatchAll(typeof(LeaderboardBlock));

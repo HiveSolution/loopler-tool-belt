@@ -26,6 +26,29 @@ static class Patches
         __result += Plugin.LuckBonus.Value;
     }
 
+    // Every car stat from parts, charms and garage upgrades comes out of these two, per StatType.
+    [HarmonyPostfix, HarmonyPatch(typeof(CarManager), nameof(CarManager.GetRealValue))]
+    static void RealValue(StatType _type, ref float __result)
+    {
+        // Boost gain reads 0 here; its getter adds the base and temporary boosts on top.
+        if (_type == StatType.GlobalBoostGain) return;
+        var s = Stats.Get(_type);
+        if (s != null) __result = s.Apply(__result);
+    }
+
+    [HarmonyPostfix, HarmonyPatch(typeof(CarManager), nameof(CarManager.GetBigRealValue))]
+    static void BigRealValue(StatType _type, ref BigNumber __result)
+    {
+        var s = Stats.Get(_type);
+        if (s == null) return;
+        float raw = (float)__result.ToDouble();
+        s.Apply(raw);
+        if (s.Entry.Value != s.Neutral && s.Mode == Mode.Multiply) __result = __result * s.Entry.Value;
+    }
+
+    [HarmonyPostfix, HarmonyPatch(typeof(CarManager), nameof(CarManager.GetGlobalBoostGain))]
+    static void BoostGain(ref float __result) => __result = Stats.Get(StatType.GlobalBoostGain).Apply(__result);
+
     [HarmonyPrefix, HarmonyPatch(typeof(CardManager), nameof(CardManager.AddDriftMeterProgress))]
     static void DriftFill(ref BigNumber ticks)
     {
@@ -39,7 +62,11 @@ static class Patches
     [HarmonyPrefix, HarmonyPatch(typeof(RunManager), nameof(RunManager.ApplyGoldChange))]
     static void Gold(ref int amount)
     {
-        if (amount > 0 && Plugin.GoldMult.Value != 1f) amount = (int)Math.Round(amount * Plugin.GoldMult.Value);
+        if (amount <= 0 || Plugin.GoldMult.Value == 1f) return;
+        // Gold is an int: stop the balance at int.MaxValue instead of wrapping to negative.
+        long current = RunData.instance != null ? (int)RunData.instance.gold : 0;
+        double wanted = Math.Round(amount * (double)Plugin.GoldMult.Value);
+        amount = (int)Math.Max(0, Math.Min(wanted, int.MaxValue - current));
     }
 
     [HarmonyPostfix, HarmonyPatch(typeof(UIColorManager), nameof(UIColorManager.ChangeUIColor))]

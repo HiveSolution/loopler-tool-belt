@@ -14,10 +14,8 @@ public class TrainerUI : MonoBehaviour
 {
     public TrainerUI(IntPtr ptr) : base(ptr) { }
 
-    static readonly float[] ScoreSteps = { 1, 1.5f, 2, 3, 5, 10, 25, 100, 1000 };
-    static readonly float[] LuckSteps = { 0, 5, 10, 25, 50, 100 };
-    static readonly float[] DriftSteps = { 1, 2, 5, 10, 50 };
-    static readonly float[] GoldSteps = { 1, 1.5f, 2, 3, 5, 10, 100 };
+    static readonly float[] ScoreSteps = Ladder.Mult, DriftSteps = Ladder.Mult, GoldSteps = Ladder.Mult;
+    static readonly float[] LuckSteps = Ladder.Add;
 
     GameObject root;
     TMP_FontAsset font;
@@ -72,14 +70,35 @@ public class TrainerUI : MonoBehaviour
 
         Text(panel, "TOOL BELT  <size=60%>[F1]</size>", 28, secondary);
 
-        StepRow(panel, "Score mult", Plugin.ScoreMult, ScoreSteps, x => $"x{x:0.##}",
-            () => $"game x{Patches.RawScoreMult:0.##} > x{Patches.RawScoreMult * Plugin.ScoreMult.Value:0.##}");
-        StepRow(panel, "Lucky chance", Plugin.LuckBonus, LuckSteps, x => $"+{x:0}%",
-            () => $"game {Patches.RawLuck:0.#}% > {Patches.RawLuck + Plugin.LuckBonus.Value:0.#}%");
-        StepRow(panel, "Drift fill", Plugin.DriftFill, DriftSteps, x => $"x{x:0.##}",
+        var tabBar = Row(panel);
+        var run = Page(panel);
+        var car = Page(panel);
+
+        StepRow(run, "Score mult", Plugin.ScoreMult, ScoreSteps, x => $"x{Num.Short(x)}",
+            () => $"game x{Num.Short(Patches.RawScoreMult)} > x{Num.Short((double)Patches.RawScoreMult * Plugin.ScoreMult.Value)}");
+        StepRow(run, "Lucky chance", Plugin.LuckBonus, LuckSteps, x => $"+{Num.Short(x)}%",
+            () => $"game {Num.Short(Patches.RawLuck)}% > {Num.Short(Patches.RawLuck + Plugin.LuckBonus.Value)}%");
+        StepRow(run, "Drift fill", Plugin.DriftFill, DriftSteps, x => $"x{Num.Short(x)}",
             () => CardManager.instance != null ? $"meter x{CardManager.instance.DriftMeterMultiplier}" : "");
-        ToggleRow(panel, "Drift meter", Plugin.ForceDriftMeter);
-        StepRow(panel, "Money mult", Plugin.GoldMult, GoldSteps, x => $"x{x:0.##}", () => "");
+        ToggleRow(run, "Drift meter", Plugin.ForceDriftMeter);
+        StepRow(run, "Money mult", Plugin.GoldMult, GoldSteps, x => $"x{Num.Short(x)}", () => "");
+        foreach (var s in Stats.All)
+            StepRow(s.Tab == "Car" ? car : run, s.Label, s.Entry, s.Steps, s.Format,
+                () => s.Seen ? $"game {Num.Short(s.Raw)} > {Num.Short(s.Final)}" : "");
+
+        var runTab = Btn(tabBar, "RUN", null, 110).GetComponent<Image>();
+        var carTab = Btn(tabBar, "CAR", null, 110).GetComponent<Image>();
+        void Show(bool showRun)
+        {
+            run.SetActive(showRun);
+            car.SetActive(!showRun);
+            runTab.color = showRun ? secondary : Dim(secondary);
+            carTab.color = showRun ? Dim(secondary) : secondary;
+        }
+        runTab.GetComponent<Button>().onClick.AddListener(DelegateSupport.ConvertDelegate<UnityAction>(new Action(() => Show(true))));
+        carTab.GetComponent<Button>().onClick.AddListener(DelegateSupport.ConvertDelegate<UnityAction>(new Action(() => Show(false))));
+        Btn(tabBar, "RESET ALL", ResetAll, 150);
+        Show(true);
 
         Text(panel, "Leaderboard uploads are off while the tool belt is installed", 14, new Color(1, 1, 1, 0.6f));
 
@@ -111,7 +130,7 @@ public class TrainerUI : MonoBehaviour
     void StepRow(GameObject parent, string label, ConfigEntry<float> entry, float[] steps, Func<float, string> fmt, Func<string> info)
     {
         var row = Row(parent);
-        Text(row, label, 20, Color.white, 150);
+        Text(row, label, 20, Color.white, 210);
         Btn(row, "-", () => entry.Value = Step(steps, entry.Value, -1));
         var val = Text(row, "", 20, secondary, 80, TextAlignmentOptions.Center);
         Btn(row, "+", () => entry.Value = Step(steps, entry.Value, +1));
@@ -122,11 +141,21 @@ public class TrainerUI : MonoBehaviour
     void ToggleRow(GameObject parent, string label, ConfigEntry<bool> entry)
     {
         var row = Row(parent);
-        Text(row, label, 20, Color.white, 150);
+        Text(row, label, 20, Color.white, 210);
         var b = Btn(row, "", () => entry.Value = !entry.Value, 80 + 36 * 2 + 16);
         var t = b.GetComponentInChildren<TextMeshProUGUI>();
         refreshers.Add(() => t.text = entry.Value ? "FORCED ON" : "CHARM ONLY");
     }
+
+    static void ResetAll()
+    {
+        Plugin.ScoreMult.Value = Plugin.DriftFill.Value = Plugin.GoldMult.Value = 1f;
+        Plugin.LuckBonus.Value = 0f;
+        Plugin.ForceDriftMeter.Value = false;
+        foreach (var s in Stats.All) s.Entry.Value = s.Neutral;
+    }
+
+    static Color Dim(Color c) => new(c.r, c.g, c.b, c.a * 0.35f);
 
     static float Step(float[] steps, float cur, int dir)
     {
@@ -144,6 +173,16 @@ public class TrainerUI : MonoBehaviour
         go.AddComponent<RectTransform>();
         go.transform.SetParent(parent.transform, false);
         return go;
+    }
+
+    static GameObject Page(GameObject parent)
+    {
+        var page = Child(parent, "Page");
+        var v = page.AddComponent<VerticalLayoutGroup>();
+        v.spacing = 8;
+        v.childControlWidth = v.childControlHeight = true;
+        v.childForceExpandWidth = v.childForceExpandHeight = false;
+        return page;
     }
 
     GameObject Row(GameObject parent)
@@ -185,7 +224,7 @@ public class TrainerUI : MonoBehaviour
         var img = Img(go, secondary);
         var b = go.AddComponent<Button>();
         b.targetGraphic = img;
-        b.onClick.AddListener(DelegateSupport.ConvertDelegate<UnityAction>(onClick));
+        if (onClick != null) b.onClick.AddListener(DelegateSupport.ConvertDelegate<UnityAction>(onClick));
         var le = go.AddComponent<LayoutElement>();
         le.preferredWidth = width;
         le.preferredHeight = 36;

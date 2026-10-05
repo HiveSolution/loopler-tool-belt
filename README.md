@@ -4,17 +4,37 @@ A trainer overlay for The Loopler (BepInEx 6, IL2CPP). Press **F1** in-game to o
 
 ![The tool belt overlay open on the run map](docs/screenshots/overlay.png)
 
+Every tool scales the game's own value, so your parts, charms, gates and garage upgrades still count
+underneath. Each row shows the game's value next to the result ("game 533 > 1066"). The **-** and
+**+** buttons step through x1, 1.25, 1.5, 2, 3, 5, 10, 25, 50, 100, 250 and on up to 5e30, so the game
+can get as far out of hand as you like.
+
+**Run tab**
+
 | Tool | What it does |
 | --- | --- |
-| Score mult | Multiplies the game's global score multiplier (x1 to x1000). Your parts, gates and drift meter level still count; the overlay shows the game's value and the result. |
-| Lucky chance | Adds percentage points to your lucky chance (+0% to +100%), on top of what your parts give. |
-| Drift fill | Multiplies how fast drift ticks fill the drift meter (x1 to x50). |
+| Score mult | Multiplies the global score multiplier (parts, gates, drift meter level). |
+| Lucky chance | Adds percentage points to your lucky chance. |
+| Drift fill | Multiplies how fast drift ticks fill the drift meter. |
 | Drift meter | **Charm only** leaves the drift meter to its charm; **Forced on** activates it without the charm. |
-| Money mult | Multiplies every gold gain (x1 to x100): round end bonus, gates, cards and card sales. Spending is not affected. |
+| Money mult | Multiplies every gold gain: round end bonus, gates, cards and card sales. Spending is not affected. Gold stops at 2,147,483,647, the most the game can hold. |
+| Base loop score | Multiplies the points per loop. |
+| Drift tick rate | Makes drift ticks come faster. |
+| Garage discount | Adds percentage points to the garage upgrade discount, up to 100% (free). |
 
-Settings are kept between sessions in `<game>\BepInEx\config\renokk.loopler.toolbelt.cfg`. Set
-everything back to x1 / +0% / Charm only to play normally. The mod writes nothing to save files
-itself, but the game saves whatever happens in a run, including gold earned with a multiplier.
+**Car tab**
+
+| Tool | What it does |
+| --- | --- |
+| Top speed, Acceleration, Drift grip | Multiply the car's stat. |
+| Fuel capacity, Fuel economy, Refuel efficiency | Multiply the fuel stats. Higher fuel economy means less fuel used. |
+| Boost gain, Boost cap, Overdrive boost | Multiply the boost stats. |
+| Max durability | Adds durability, up to +1,000,000. |
+
+**Reset all** puts every tool back to neutral (x1, +0, Charm only), which is how to play normally.
+Settings are kept between sessions in `<game>\BepInEx\config\renokk.loopler.toolbelt.cfg`. The mod
+writes nothing to save files itself, but the game saves whatever happens in a run, including gold
+earned with a multiplier.
 
 ## Leaderboards
 
@@ -46,7 +66,8 @@ defaults to the path in `LooplerToolBelt.csproj`; override it with `-p:GameDir="
 ## Layout
 
 - `src/Plugin.cs`: BepInEx entry point and config entries.
-- `src/Patches.cs`: the hooks into the game's score multiplier, luck, drift meter and gold.
+- `src/Stats.cs`: the car and run stats (per game `StatType`), the -/+ step ladder and number formatting.
+- `src/Patches.cs`: the hooks into the game's score multiplier, luck, stats, drift meter and gold.
 - `src/LeaderboardBlock.cs`: blocks every leaderboard upload.
 - `src/TrainerUI.cs`: F1 key and the overlay, built from the game's own font, sprites and colours.
 
